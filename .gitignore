@@ -1,3 +1,12 @@
+.vscode
+
+MDK-ARM/TJU_Powerline_Patrol
+
+JLinkLog.txt
+JLinkSettings.ini
+
+*.uvguix.*
+
 # Prerequisites
 *.d
 
