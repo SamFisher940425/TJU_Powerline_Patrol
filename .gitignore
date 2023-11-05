@@ -1,6 +1,9 @@
 .vscode
 
-MDK-ARM/TJU_Powerline_Patrol
+MDK-ARM/*
+!MDK-ARM/*.uvoptx
+!MDK-ARM/*.uvprojx
+!MDK-ARM/*.s
 
 JLinkLog.txt
 JLinkSettings.ini
