@@ -61,6 +61,8 @@ RTC_HandleTypeDef hrtc;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_usart1_rx;
+DMA_HandleTypeDef hdma_usart3_tx;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -74,14 +76,14 @@ osThreadId_t myTask_WDogHandle;
 const osThreadAttr_t myTask_WDog_attributes = {
   .name = "myTask_WDog",
   .stack_size = 64 * 4,
-  .priority = (osPriority_t) osPriorityHigh,
+  .priority = (osPriority_t) osPriorityRealtime,
 };
 /* Definitions for myTask_232Rx */
 osThreadId_t myTask_232RxHandle;
 const osThreadAttr_t myTask_232Rx_attributes = {
   .name = "myTask_232Rx",
   .stack_size = 64 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 /* Definitions for myTask_485C1Tx */
 osThreadId_t myTask_485C1TxHandle;
@@ -90,19 +92,27 @@ const osThreadAttr_t myTask_485C1Tx_attributes = {
   .stack_size = 64 * 4,
   .priority = (osPriority_t) osPriorityBelowNormal,
 };
+/* Definitions for myTask_WorkFlow */
+osThreadId_t myTask_WorkFlowHandle;
+const osThreadAttr_t myTask_WorkFlow_attributes = {
+  .name = "myTask_WorkFlow",
+  .stack_size = 64 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* USER CODE BEGIN PV */
 volatile uint8_t g_rs232_status = 0;
 volatile uint8_t g_rs232_rx_buf[RS232_RX_DATA_LENGTH] = {0};
 volatile uint16_t g_sbus_ch_val[16] = {0};
-volatile uint8_t g_sbus_mutex = 0;
+volatile uint8_t g_sbus_new_frame_flag = 0;
 volatile uint8_t g_rs485_tx_buf[PELCOD_CMD_TYPE][PELCOD_CMD_LENGTH] = {0}; // line_0: move, line_1: zoom, line_2: focal, line_3: aperture, line_4: light, line_5: wiper
 volatile uint8_t g_pelcod_status[PELCOD_CMD_TYPE] = {0};
-volatile uint8_t g_work_flow_status = 0;
+volatile uint8_t g_pelcod_new_pack_flag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
@@ -112,9 +122,10 @@ void StartDefaultTask(void *argument);
 void StartTask_WDog(void *argument);
 void StartTask_232Rx(void *argument);
 void StartTask_485C1Tx(void *argument);
+void StartTask_WorkFlow(void *argument);
 
 /* USER CODE BEGIN PFP */
-void RS232_Rx_CpltCallBack(UART_HandleTypeDef *huart);
+void RS232_RxEventCallBack(struct __UART_HandleTypeDef *huart, uint16_t Pos);
 void RS485_Status_Set(RS485_Channel ch, RS485_Status status);
 
 void SBus_Pelcod_Trans(void);
@@ -153,13 +164,14 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_RTC_Init();
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_RegisterCallback(&huart1, HAL_UART_RX_COMPLETE_CB_ID, RS232_Rx_CpltCallBack);
+  HAL_UART_RegisterRxEventCallback(&huart1, RS232_RxEventCallBack);
   RS485_Status_Set(RS485_CH1, RS485_WRITE);
   /* USER CODE END 2 */
 
@@ -194,6 +206,9 @@ int main(void)
 
   /* creation of myTask_485C1Tx */
   myTask_485C1TxHandle = osThreadNew(StartTask_485C1Tx, NULL, &myTask_485C1Tx_attributes);
+
+  /* creation of myTask_WorkFlow */
+  myTask_WorkFlowHandle = osThreadNew(StartTask_WorkFlow, NULL, &myTask_WorkFlow_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -451,6 +466,25 @@ static void MX_USART3_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+  /* DMA1_Channel5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -508,21 +542,13 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void RS232_Rx_CpltCallBack(UART_HandleTypeDef *huart)
+void RS232_RxEventCallBack(struct __UART_HandleTypeDef *huart, uint16_t Pos)
 {
-  switch (g_rs232_status)
+  HAL_UART_RxEventTypeTypeDef event_type = 3;
+  event_type = HAL_UARTEx_GetRxEventType(huart);
+  switch (event_type)
   {
-  case 1:
-    if (g_rs232_rx_buf[0] == 0x0F)
-    {
-      g_rs232_status = 2;
-    }
-    else
-    {
-      g_rs232_status = 0;
-    }
-    break;
-  case 3:
+  case HAL_UART_RXEVENT_TC:
     if ((g_rs232_rx_buf[33] & 0x0F) == 0x0C)
     {
       uint8_t rs232_xor_result = 0;
@@ -532,28 +558,23 @@ void RS232_Rx_CpltCallBack(UART_HandleTypeDef *huart)
       }
       if (rs232_xor_result == g_rs232_rx_buf[34])
       {
-        if (g_sbus_mutex == 0)
+        if (g_sbus_new_frame_flag == 0)
         {
-          g_sbus_mutex = 1;
           for (uint8_t i = 0; i < 16; i++)
           {
             g_sbus_ch_val[i] = ((uint16_t)g_rs232_rx_buf[2 * i + 1] << 8) | (uint16_t)g_rs232_rx_buf[2 * i + 2];
           }
-          g_work_flow_status = 1;
-          // HAL_UART_Transmit_IT(&huart1, (uint8_t *)g_sbus_ch_val, 32);
-          g_sbus_mutex = 0;
+          g_sbus_new_frame_flag = 1;
         }
-        g_rs232_status = 2;
-      }
-      else
-      {
-        g_rs232_status = 0;
       }
     }
-    else
-    {
-      g_rs232_status = 0;
-    }
+    g_rs232_status = 0;
+    break;
+  case HAL_UART_RXEVENT_HT:
+    /* code */
+    break;
+  case HAL_UART_RXEVENT_IDLE:
+    g_rs232_status = 0;
     break;
 
   default:
@@ -612,6 +633,14 @@ void SBus_Pelcod_Trans(void)
   // uint8_t func_code_1 = 0;
   uint8_t func_code_2 = 0;
   uint16_t check_code = 0;
+
+  for (int i = 0; i < PELCOD_CMD_TYPE; i++) // clear cmd history
+  {
+    for (int j = 0; j < PELCOD_CMD_LENGTH; j++)
+    {
+      g_rs485_tx_buf[i][j] = 0;
+    }
+  }
 
   if (g_sbus_ch_val[2] >= 1550) // up
   {
@@ -715,25 +744,45 @@ void SBus_Pelcod_Trans(void)
 
   if (g_sbus_ch_val[6] > 1750) // zoom
   {
-    g_rs485_tx_buf[1][0] = 0xFF;
-    g_rs485_tx_buf[1][1] = 0x01;
-    g_rs485_tx_buf[1][2] = 0x00;
-    g_rs485_tx_buf[1][3] = 0x20;
-    g_rs485_tx_buf[1][4] = 0x00;
-    g_rs485_tx_buf[1][5] = 0x00;
-    g_rs485_tx_buf[1][6] = 0x21;
-    g_pelcod_status[1] = 2;
+    if (g_pelcod_status[1] != 2)
+    {
+      g_rs485_tx_buf[1][0] = 0xFF;
+      g_rs485_tx_buf[1][1] = 0x01;
+      g_rs485_tx_buf[1][2] = 0x00;
+      g_rs485_tx_buf[1][3] = 0x20;
+      g_rs485_tx_buf[1][4] = 0x00;
+      g_rs485_tx_buf[1][5] = 0x00;
+      g_rs485_tx_buf[1][6] = 0x21;
+      g_pelcod_status[1] = 2;
+    }
+    else
+    {
+      for (int i = 0; i < PELCOD_CMD_LENGTH; i++)
+      {
+        g_rs485_tx_buf[1][i] = 0;
+      }
+    }
   }
   else if (g_sbus_ch_val[6] < 1250)
   {
-    g_rs485_tx_buf[1][0] = 0xFF;
-    g_rs485_tx_buf[1][1] = 0x01;
-    g_rs485_tx_buf[1][2] = 0x00;
-    g_rs485_tx_buf[1][3] = 0x40;
-    g_rs485_tx_buf[1][4] = 0x00;
-    g_rs485_tx_buf[1][5] = 0x00;
-    g_rs485_tx_buf[1][6] = 0x41;
-    g_pelcod_status[1] = 1;
+    if (g_pelcod_status[1] != 1)
+    {
+      g_rs485_tx_buf[1][0] = 0xFF;
+      g_rs485_tx_buf[1][1] = 0x01;
+      g_rs485_tx_buf[1][2] = 0x00;
+      g_rs485_tx_buf[1][3] = 0x40;
+      g_rs485_tx_buf[1][4] = 0x00;
+      g_rs485_tx_buf[1][5] = 0x00;
+      g_rs485_tx_buf[1][6] = 0x41;
+      g_pelcod_status[1] = 1;
+    }
+    else
+    {
+      for (int i = 0; i < PELCOD_CMD_LENGTH; i++)
+      {
+        g_rs485_tx_buf[1][i] = 0;
+      }
+    }
   }
   else
   {
@@ -759,25 +808,45 @@ void SBus_Pelcod_Trans(void)
 
   if (g_sbus_ch_val[7] > 1750) // focal
   {
-    g_rs485_tx_buf[2][0] = 0xFF;
-    g_rs485_tx_buf[2][1] = 0x01;
-    g_rs485_tx_buf[2][2] = 0x01;
-    g_rs485_tx_buf[2][3] = 0x00;
-    g_rs485_tx_buf[2][4] = 0x00;
-    g_rs485_tx_buf[2][5] = 0x00;
-    g_rs485_tx_buf[2][6] = 0x02;
-    g_pelcod_status[2] = 2;
+    if (g_pelcod_status[2] != 2)
+    {
+      g_rs485_tx_buf[2][0] = 0xFF;
+      g_rs485_tx_buf[2][1] = 0x01;
+      g_rs485_tx_buf[2][2] = 0x01;
+      g_rs485_tx_buf[2][3] = 0x00;
+      g_rs485_tx_buf[2][4] = 0x00;
+      g_rs485_tx_buf[2][5] = 0x00;
+      g_rs485_tx_buf[2][6] = 0x02;
+      g_pelcod_status[2] = 2;
+    }
+    else
+    {
+      for (int i = 0; i < PELCOD_CMD_LENGTH; i++)
+      {
+        g_rs485_tx_buf[2][i] = 0;
+      }
+    }
   }
   else if (g_sbus_ch_val[7] < 1250)
   {
-    g_rs485_tx_buf[2][0] = 0xFF;
-    g_rs485_tx_buf[2][1] = 0x01;
-    g_rs485_tx_buf[2][2] = 0x00;
-    g_rs485_tx_buf[2][3] = 0x80;
-    g_rs485_tx_buf[2][4] = 0x00;
-    g_rs485_tx_buf[2][5] = 0x00;
-    g_rs485_tx_buf[2][6] = 0x81;
-    g_pelcod_status[2] = 1;
+    if (g_pelcod_status[2] != 1)
+    {
+      g_rs485_tx_buf[2][0] = 0xFF;
+      g_rs485_tx_buf[2][1] = 0x01;
+      g_rs485_tx_buf[2][2] = 0x00;
+      g_rs485_tx_buf[2][3] = 0x80;
+      g_rs485_tx_buf[2][4] = 0x00;
+      g_rs485_tx_buf[2][5] = 0x00;
+      g_rs485_tx_buf[2][6] = 0x81;
+      g_pelcod_status[2] = 1;
+    }
+    else
+    {
+      for (int i = 0; i < PELCOD_CMD_LENGTH; i++)
+      {
+        g_rs485_tx_buf[2][i] = 0;
+      }
+    }
   }
   else
   {
@@ -893,15 +962,9 @@ void StartTask_232Rx(void *argument)
     switch (g_rs232_status)
     {
     case 0:
-      if (HAL_UART_Receive_IT(&huart1, (uint8_t *)g_rs232_rx_buf, RS232_RX_DATA_LENGTH) == HAL_OK)
+      if (HAL_UARTEx_ReceiveToIdle_DMA(&huart1, (uint8_t *)g_rs232_rx_buf, RS232_RX_DATA_LENGTH) == HAL_OK)
       {
         g_rs232_status = 1;
-      }
-      break;
-    case 2:
-      if (HAL_UART_Receive_IT(&huart1, (uint8_t *)g_rs232_rx_buf, RS232_RX_DATA_LENGTH) == HAL_OK)
-      {
-        g_rs232_status = 3;
       }
       break;
 
@@ -922,51 +985,94 @@ void StartTask_232Rx(void *argument)
 void StartTask_485C1Tx(void *argument)
 {
   /* USER CODE BEGIN StartTask_485C1Tx */
+  static int8_t rs485_tx_line = (PELCOD_CMD_TYPE - 1);
   /* Infinite loop */
   for (;;)
   {
-    osDelay(100);
-    for (int i = 0; i < PELCOD_CMD_TYPE; i++) // clear cmd history
+    osDelay(20);
+    if (g_pelcod_new_pack_flag == 1) // a new pack needs to be sent
     {
-      for (int j = 0; j < PELCOD_CMD_LENGTH; j++)
+      while (rs485_tx_line >= 0) // find valid frame
       {
-        g_rs485_tx_buf[i][j] = 0;
-      }
-    }
-
-    if (g_work_flow_status == 1)
-    {
-      if (g_sbus_mutex == 0)
-      {
-        g_sbus_mutex = 1;
-        SBus_Pelcod_Trans();
-        g_sbus_mutex = 0;
-
-        HAL_UART_Transmit_IT(&huart3, (uint8_t *)&g_rs485_tx_buf[0][0], PELCOD_CMD_LENGTH);
-        for (uint8_t i = 1; i < PELCOD_CMD_TYPE; i++)
+        if (g_rs485_tx_buf[rs485_tx_line][0] == 0xFF) // valid frame
         {
-          if (g_rs485_tx_buf[i][0] == 0xFF)
-          {
-            osDelay(20);
-            HAL_UART_Transmit_IT(&huart3, (uint8_t *)&g_rs485_tx_buf[i][0], PELCOD_CMD_LENGTH);
-          }
+          break;
+        }
+        else // empty frame
+        {
+          rs485_tx_line -= 1;
         }
       }
-      else
+      if (rs485_tx_line >= 0)
       {
-        g_rs485_tx_buf[0][0] = 0xFF;
-        g_rs485_tx_buf[0][1] = 0x01;
-        g_rs485_tx_buf[0][2] = 0x00;
-        g_rs485_tx_buf[0][3] = 0x00;
-        g_rs485_tx_buf[0][4] = 0x00;
-        g_rs485_tx_buf[0][5] = 0x00;
-        g_rs485_tx_buf[0][6] = 0x01;
-        HAL_UART_Transmit_IT(&huart3, (uint8_t *)&g_rs485_tx_buf[0][0], PELCOD_CMD_LENGTH);
+        HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&g_rs485_tx_buf[rs485_tx_line][0], PELCOD_CMD_LENGTH);
+        rs485_tx_line -= 1;
       }
-      g_work_flow_status = 0;
+
+      if (rs485_tx_line < 0)
+      {
+        g_pelcod_new_pack_flag = 0;
+        rs485_tx_line = (PELCOD_CMD_TYPE - 1);
+      }
     }
   }
   /* USER CODE END StartTask_485C1Tx */
+}
+
+/* USER CODE BEGIN Header_StartTask_WorkFlow */
+/**
+ * @brief Function implementing the myTask_WorkFlow thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartTask_WorkFlow */
+void StartTask_WorkFlow(void *argument)
+{
+  /* USER CODE BEGIN StartTask_WorkFlow */
+  static uint16_t miss_cnt = 0;
+  static uint8_t connect_flag = 0;
+  /* Infinite loop */
+  for (;;)
+  {
+    osDelay(5);
+    if (g_sbus_new_frame_flag == 1 && g_pelcod_new_pack_flag == 0)
+    {
+      SBus_Pelcod_Trans();
+      g_pelcod_new_pack_flag = 1;
+      g_sbus_new_frame_flag = 0;
+      connect_flag = 1;
+      miss_cnt = 0;
+    }
+    else
+    {
+      if (connect_flag == 1)
+      {
+        miss_cnt += 1;
+        if (miss_cnt > 200)
+        {
+          // fall safe execution
+          g_rs485_tx_buf[0][0] = 0xFF;
+          g_rs485_tx_buf[0][1] = 0x01;
+          g_rs485_tx_buf[0][2] = 0x00;
+          g_rs485_tx_buf[0][3] = 0x00;
+          g_rs485_tx_buf[0][4] = 0x00;
+          g_rs485_tx_buf[0][5] = 0x00;
+          g_rs485_tx_buf[0][6] = 0x01;
+          for (int i = 1; i < PELCOD_CMD_TYPE; i++)
+          {
+            for (int j = 0; j < PELCOD_CMD_LENGTH; j++)
+            {
+              g_rs485_tx_buf[i][j] = 0;
+            }
+          }
+          g_pelcod_new_pack_flag = 1;
+          miss_cnt = 0;
+          connect_flag = 0;
+        }
+      }
+    }
+  }
+  /* USER CODE END StartTask_WorkFlow */
 }
 
 /**
