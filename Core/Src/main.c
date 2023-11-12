@@ -67,37 +67,37 @@ DMA_HandleTypeDef hdma_usart3_tx;
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 64 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "defaultTask",
+    .stack_size = 64 * 4,
+    .priority = (osPriority_t)osPriorityLow,
 };
 /* Definitions for myTask_WDog */
 osThreadId_t myTask_WDogHandle;
 const osThreadAttr_t myTask_WDog_attributes = {
-  .name = "myTask_WDog",
-  .stack_size = 64 * 4,
-  .priority = (osPriority_t) osPriorityRealtime,
+    .name = "myTask_WDog",
+    .stack_size = 64 * 4,
+    .priority = (osPriority_t)osPriorityRealtime,
 };
 /* Definitions for myTask_232Rx */
 osThreadId_t myTask_232RxHandle;
 const osThreadAttr_t myTask_232Rx_attributes = {
-  .name = "myTask_232Rx",
-  .stack_size = 64 * 4,
-  .priority = (osPriority_t) osPriorityHigh,
+    .name = "myTask_232Rx",
+    .stack_size = 64 * 4,
+    .priority = (osPriority_t)osPriorityHigh,
 };
 /* Definitions for myTask_485C1Tx */
 osThreadId_t myTask_485C1TxHandle;
 const osThreadAttr_t myTask_485C1Tx_attributes = {
-  .name = "myTask_485C1Tx",
-  .stack_size = 64 * 4,
-  .priority = (osPriority_t) osPriorityBelowNormal,
+    .name = "myTask_485C1Tx",
+    .stack_size = 64 * 4,
+    .priority = (osPriority_t)osPriorityBelowNormal,
 };
 /* Definitions for myTask_WorkFlow */
 osThreadId_t myTask_WorkFlowHandle;
 const osThreadAttr_t myTask_WorkFlow_attributes = {
-  .name = "myTask_WorkFlow",
-  .stack_size = 64 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+    .name = "myTask_WorkFlow",
+    .stack_size = 64 * 4,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
 volatile uint8_t g_rs232_status = 0;
@@ -137,9 +137,9 @@ void SBus_Pelcod_Trans(void);
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -234,9 +234,9 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -244,9 +244,9 @@ void SystemClock_Config(void)
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
+   * in the RCC_OscInitTypeDef structure.
+   */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI | RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
@@ -260,9 +260,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -281,10 +280,10 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief IWDG Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief IWDG Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_IWDG_Init(void)
 {
 
@@ -305,14 +304,13 @@ static void MX_IWDG_Init(void)
   /* USER CODE BEGIN IWDG_Init 2 */
 
   /* USER CODE END IWDG_Init 2 */
-
 }
 
 /**
-  * @brief RTC Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief RTC Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_RTC_Init(void)
 {
 
@@ -328,7 +326,7 @@ static void MX_RTC_Init(void)
   /* USER CODE END RTC_Init 1 */
 
   /** Initialize RTC Only
-  */
+   */
   hrtc.Instance = RTC;
   hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
   hrtc.Init.OutPut = RTC_OUTPUTSOURCE_ALARM;
@@ -342,7 +340,7 @@ static void MX_RTC_Init(void)
   /* USER CODE END Check_RTC_BKUP */
 
   /** Initialize RTC and set the Time and Date
-  */
+   */
   sTime.Hours = 0x0;
   sTime.Minutes = 0x0;
   sTime.Seconds = 0x0;
@@ -363,14 +361,13 @@ static void MX_RTC_Init(void)
   /* USER CODE BEGIN RTC_Init 2 */
 
   /* USER CODE END RTC_Init 2 */
-
 }
 
 /**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief USART1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_USART1_UART_Init(void)
 {
 
@@ -396,14 +393,13 @@ static void MX_USART1_UART_Init(void)
   /* USER CODE BEGIN USART1_Init 2 */
 
   /* USER CODE END USART1_Init 2 */
-
 }
 
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief USART2 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_USART2_UART_Init(void)
 {
 
@@ -429,14 +425,13 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
-
 }
 
 /**
-  * @brief USART3 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief USART3 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_USART3_UART_Init(void)
 {
 
@@ -462,12 +457,11 @@ static void MX_USART3_UART_Init(void)
   /* USER CODE BEGIN USART3_Init 2 */
 
   /* USER CODE END USART3_Init 2 */
-
 }
 
 /**
-  * Enable DMA controller clock
-  */
+ * Enable DMA controller clock
+ */
 static void MX_DMA_Init(void)
 {
 
@@ -481,19 +475,18 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -502,43 +495,43 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, RS485_2_DE_Pin|RS485_2_RE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, RS485_2_DE_Pin | RS485_2_RE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, RS485_1_DE_Pin|RS485_1_RE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, RS485_1_DE_Pin | RS485_1_RE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LED_3_Pin|LED_2_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, LED_3_Pin | LED_2_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : RS485_2_DE_Pin RS485_2_RE_Pin */
-  GPIO_InitStruct.Pin = RS485_2_DE_Pin|RS485_2_RE_Pin;
+  GPIO_InitStruct.Pin = RS485_2_DE_Pin | RS485_2_RE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RS485_1_DE_Pin RS485_1_RE_Pin */
-  GPIO_InitStruct.Pin = RS485_1_DE_Pin|RS485_1_RE_Pin;
+  GPIO_InitStruct.Pin = RS485_1_DE_Pin | RS485_1_RE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SW_2_Pin SW_3_Pin */
-  GPIO_InitStruct.Pin = SW_2_Pin|SW_3_Pin;
+  GPIO_InitStruct.Pin = SW_2_Pin | SW_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LED_3_Pin LED_2_Pin */
-  GPIO_InitStruct.Pin = LED_3_Pin|LED_2_Pin;
+  GPIO_InitStruct.Pin = LED_3_Pin | LED_2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -633,6 +626,7 @@ void SBus_Pelcod_Trans(void)
   // uint8_t func_code_1 = 0;
   uint8_t func_code_2 = 0;
   uint16_t check_code = 0;
+  static uint8_t not_move_cnt = 0;
 
   for (int i = 0; i < PELCOD_CMD_TYPE; i++) // clear cmd history
   {
@@ -728,19 +722,46 @@ void SBus_Pelcod_Trans(void)
   //   func_code_2 &= ~(0x06);
   // }
 
-  g_rs485_tx_buf[0][0] = 0xFF;
-  g_rs485_tx_buf[0][1] = 0x01;
-  g_rs485_tx_buf[0][2] = 0x00;
-  g_rs485_tx_buf[0][3] = func_code_2;
-  g_rs485_tx_buf[0][4] = left_right_speed;
-  g_rs485_tx_buf[0][5] = up_down_speed;
-  check_code = 0;
-  for (int i = 1; i < 6; i++)
+  if (up_down_flag == 0 && left_right_flag == 0)
   {
-    check_code += g_rs485_tx_buf[0][i];
+    if (g_pelcod_status[0] != 0)
+    {
+      not_move_cnt += 1;
+      if (not_move_cnt > 10)
+      {
+        g_pelcod_status[0] = 0;
+        not_move_cnt = 0;
+      }
+    }
   }
-  check_code = check_code % 256;
-  g_rs485_tx_buf[0][6] = (uint8_t)(check_code & 0x00FF);
+  else
+  {
+    g_pelcod_status[0] = 1;
+  }
+
+  if (g_pelcod_status[0] == 1)
+  {
+    g_rs485_tx_buf[0][0] = 0xFF;
+    g_rs485_tx_buf[0][1] = 0x01;
+    g_rs485_tx_buf[0][2] = 0x00;
+    g_rs485_tx_buf[0][3] = func_code_2;
+    g_rs485_tx_buf[0][4] = left_right_speed;
+    g_rs485_tx_buf[0][5] = up_down_speed;
+    check_code = 0;
+    for (int i = 1; i < 6; i++)
+    {
+      check_code += g_rs485_tx_buf[0][i];
+    }
+    check_code = check_code % 256;
+    g_rs485_tx_buf[0][6] = (uint8_t)(check_code & 0x00FF);
+  }
+  else
+  {
+    for (int i = 0; i < PELCOD_CMD_LENGTH; i++)
+    {
+      g_rs485_tx_buf[0][i] = 0;
+    }
+  }
 
   if (g_sbus_ch_val[6] > 1750) // zoom
   {
@@ -1066,6 +1087,7 @@ void StartTask_WorkFlow(void *argument)
             }
           }
           g_pelcod_new_pack_flag = 1;
+          g_sbus_new_frame_flag = 0;
           miss_cnt = 0;
           connect_flag = 0;
         }
@@ -1076,19 +1098,20 @@ void StartTask_WorkFlow(void *argument)
 }
 
 /**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM2 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
+ * @brief  Period elapsed callback in non blocking mode
+ * @note   This function is called  when TIM2 interrupt took place, inside
+ * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+ * a global variable "uwTick" used as application time base.
+ * @param  htim : TIM handle
+ * @retval None
+ */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM2) {
+  if (htim->Instance == TIM2)
+  {
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
@@ -1097,9 +1120,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 }
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -1111,14 +1134,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
