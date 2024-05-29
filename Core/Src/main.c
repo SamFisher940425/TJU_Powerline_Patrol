@@ -143,7 +143,8 @@ void SBus_Pelcod_Trans(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+  __HAL_DBGMCU_FREEZE_IWDG();
+	__HAL_DBGMCU_FREEZE_WWDG();
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -558,6 +559,7 @@ void RS232_RxEventCallBack(struct __UART_HandleTypeDef *huart, uint16_t Pos)
             g_sbus_ch_val[i] = ((uint16_t)g_rs232_rx_buf[2 * i + 1] << 8) | (uint16_t)g_rs232_rx_buf[2 * i + 2];
           }
           g_sbus_new_frame_flag = 1;
+					HAL_GPIO_TogglePin(LED_3_GPIO_Port, LED_3_Pin);
         }
       }
     }
